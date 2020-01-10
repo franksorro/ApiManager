@@ -26,7 +26,7 @@ class ApiManager: NSObject {
         case failure(ApiError)
     }
     
-    enum httpMethods {
+    enum HttpMethods: String {
         case get
         case post
         case put
@@ -42,9 +42,9 @@ class ApiManager: NSObject {
     private let cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy
     private let timeoutInterval: TimeInterval = 20.0
     
-    func Request<T: Decodable>(with url: String,
+    func request<T: Decodable>(with url: String,
                                type: T.Type,
-                               _ method: httpMethods = .get,
+                               _ method: HttpMethods = .get,
                                _ headers: [String: String] = [:],
                                _ parameters: Any? = nil,
                                _ encoding: Encoding = .json,
@@ -59,7 +59,7 @@ class ApiManager: NSObject {
         var request = URLRequest(url: url,
                                  cachePolicy: cachePolicy,
                                  timeoutInterval: timeoutInterval)
-        request.httpMethod = String(describing: method)
+        request.httpMethod = method.rawValue
         
         if let parameters = parameters {
             do {
@@ -78,28 +78,28 @@ class ApiManager: NSObject {
         
         URLSession.shared.dataTask(with: request,
                                    completionHandler: { data, response, error in
-            guard
-                error == nil
-                else {
-                    completion(.failure(.networkError(error!)))
-                    return
-            }
-            
-            guard
-                let data = data
-                else {
-                    completion(.failure(.dataNotFound))
-                    return
-            }
-            
-            do {
-                let decodedObject = try JSONDecoder().decode(type.self, from: data)
-                completion(.success(decodedObject))
-                
-            } catch let error {
-                completion(.failure(.jsonParsingError(error as! DecodingError)))
-            }
-                
+                                    guard
+                                        error == nil
+                                        else {
+                                            completion(.failure(.networkError(error!)))
+                                            return
+                                    }
+                                    
+                                    guard
+                                        let data = data
+                                        else {
+                                            completion(.failure(.dataNotFound))
+                                            return
+                                    }
+                                    
+                                    do {
+                                        let decodedObject = try JSONDecoder().decode(type.self, from: data)
+                                        completion(.success(decodedObject))
+                                        
+                                    } catch let error {
+                                        completion(.failure(.jsonParsingError(error as! DecodingError)))
+                                    }
+                                    
         }).resume()
     }
 }
