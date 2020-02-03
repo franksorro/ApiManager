@@ -46,7 +46,7 @@ class ApiManager: NSObject {
                                type: T.Type,
                                _ method: HttpMethods = .get,
                                _ headers: [String: String] = [:],
-                               _ parameters: Any? = nil,
+                               _ parameters: [String: Any] = [:],
                                _ encoding: Encoding = .json,
                                completion: @escaping (Result<T>) -> Void) {
         guard
@@ -61,16 +61,9 @@ class ApiManager: NSObject {
                                  timeoutInterval: timeoutInterval)
         request.httpMethod = method.rawValue
         
-        if let parameters = parameters {
-            do {
-                request.httpBody = try JSONSerialization.data(withJSONObject: parameters,
-                                                              options: [])
-                
-            } catch let error {
-                completion(.failure(.invalidParameters(error)))
-                return
-            }
-        }
+        request.httpBody = parameters.map { return "\($0.key)=\($0.value)" }
+            .joined(separator: "&")
+            .data(using: .utf8)
         
         headers.forEach({ (key, value) in
             request.addValue(value, forHTTPHeaderField: key)
